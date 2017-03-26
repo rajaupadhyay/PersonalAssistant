@@ -1,35 +1,32 @@
-import pyaudio
-import wave
+import speech_recognition as sr
+import nltk
+import subprocess
 
-FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 44100
-CHUNK = 1024
-RECORD_SECONDS = 5
-WAVE_OUTPUT_FILENAME = "file.wav"
+# This is so much simpler
+def active_listen():
+    r = sr.Recognizer()
+    with sr.Microphone() as src:
+        audio = r.listen(src)
+    msg = ''
+    try:
+        msg = r.recognize_google(audio)
+        print(msg.lower())
+    except sr.UnknownValueError:
+        print("Google Speech Recognition could not understand audio")
+    except sr.RequestError as e:
+        print("Could not request results from Google STT; {0}".format(e))
+    except:
+        print("Dude you messed up!")
+    finally:
+        return msg.lower()
 
-audio = pyaudio.PyAudio()
 
-# start Recording
-stream = audio.open(format=FORMAT, channels=CHANNELS,
-                    rate=RATE, input=True,
-                    frames_per_buffer=CHUNK)
-print("recording...")
-frames = []
+message = active_listen()
+print(message)
 
-for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-    data = stream.read(CHUNK)
-    frames.append(data)
-print("finished recording")
+tokens = nltk.word_tokenize(message)
+print(tokens)
 
-# stop Recording
-stream.stop_stream()
-stream.close()
-audio.terminate()
+if "open" and "chrome" in tokens:
+    subprocess.call(["/usr/bin/open", "-W", "-n", "-a", "/Applications/Google Chrome.app"])
 
-waveFile = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-waveFile.setnchannels(CHANNELS)
-waveFile.setsampwidth(audio.get_sample_size(FORMAT))
-waveFile.setframerate(RATE)
-waveFile.writeframes(b''.join(frames))
-waveFile.close()
